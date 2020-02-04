@@ -10,9 +10,13 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-
-
-
+from sklearn.metrics import confusion_matrix
+import itertools
+from keras.models import Sequential
+from keras.layers import Dense, Dropout,Flatten,Conv2D,MaxPool2D
+from keras.optimizers import RMSprop, Adam
+from keras.preprocessing.image import ImageDataGenerator
+from keras.callbacks import ReduceLROnPlateau
 #load dataset
 #dataset overview
 #Now  we have 2 numpy files X.npy and Y.npy. So we need to load them.
@@ -45,6 +49,7 @@ plt.axis("off")
 print("Dimension of Dataset1:" + str(dataset1.ndim))
 print("Dataset1 shape:" +str( dataset1.shape))
 print("Dataset2 shape:"+ str(dataset2.shape))
+#Train and Test Split
 #training and testing data
 from sklearn.model_selection import train_test_split
 Xtrain, Xtest, Ytrain, Ytest=train_test_split(dataset1,dataset2, test_size=0.15, random_state=42)
@@ -76,14 +81,31 @@ print("Ytest shape: ",Ytest.shape)
 from keras.utils.np_utils import to_categorical
 Ytrain=to_categorical(Ytrain,num_classes=10)
 
-#Train and Test Split
+
+#Create a model
+
+learningModel=Sequential()
 #CNN-Same Padding
+learningModel.add(Conv2D(filters=8,kernel_size=(5,5),padding="Same",activation='relu',input_shape=(64,64,1)))
 #CNN-Max Pooling
+learningModel.add(MaxPool2D(pool_size=(2,2)))
 #Flattening
+learningModel.add(Dropout(0.25))
+#CNN-Same Padding2
+learningModel.add(Conv2D(filters=2,kernel_size=(3,3),padding="Same", activation="relu"))
+#CNN-Max Pooling2
+learningModel.add(MaxPool2D(pool_size=(2,2),strides=(2,2)))
+#Flattening2
+learningModel.add(Dropout(0.25))
 #Full Connection
-#Create Model
+learningModel.add(Flatten())
+learningModel.add(Dense(256,activation="relu"))
+learningModel.add(Dropout(0.5))
+learningModel.add(Dense(10,activation="softmax"))
 #Define Optimizer
+learningOptimizer=Adam(lr=0.001,beta_1=0.9,beta_2=0.999)
 #Compile Model
+learningModel.compile(optimizer=learningOptimizer,loss="categorical_crossentropy",metrics=["accuracy"])
 #Epochs and Batch Size
 #Data Augmentation
 #Fit the Model
