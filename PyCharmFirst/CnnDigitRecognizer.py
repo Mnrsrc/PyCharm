@@ -70,16 +70,15 @@ Ytrain=Ytrain/255.0
 Ytest=Ytest/255.0
 #Reshape Data because of the Keras rules
 #-1?
-Xtrain=Xtrain.reshape(-1,64,64,3)
+Xtrain=Xtrain.reshape(-1,64,64,1)
 Xtest=Xtest.reshape(-1,64,64,1)
-Ytrain=Ytrain.reshape(-1,10,1)
+#Ytrain=Ytrain.reshape(-1,10,1)
 print("Xtrain shape: " , Xtrain.shape)
 print("Xtest shape: ",Xtest.shape)
-print("Ytrain shape: ",Ytrain.shape)
 print("Ytest shape: ",Ytest.shape)
 #Label Encoding
 from keras.utils.np_utils import to_categorical
-Ytrain=to_categorical(Ytrain,num_classes=10)
+#Ytrain=to_categorical(Ytrain,num_classes=10)
 
 
 #Create a model
@@ -107,6 +106,45 @@ learningOptimizer=Adam(lr=0.001,beta_1=0.9,beta_2=0.999)
 #Compile Model
 learningModel.compile(optimizer=learningOptimizer,loss="categorical_crossentropy",metrics=["accuracy"])
 #Epochs and Batch Size
+epoch=1
+batchSize=1
 #Data Augmentation
+dataGeneration=ImageDataGenerator(featurewise_center=False,samplewise_center=False,
+                                  featurewise_std_normalization=False, samplewise_std_normalization=False,
+                                  zca_whitening=False,rotation_range=0.5,zoom_range=0.5,width_shift_range=0.5,
+                                  height_shift_range=0.5,horizontal_flip=False,vertical_flip=False)
+dataGeneration.fit(Xtrain)
+
+print("**********************")
+print(len(Xtrain))
+print(Xtrain.shape)
+
 #Fit the Model
+"""history = model.fit_generator(datagen.flow(X_train,Y_train, batch_size=batch_size),
+                              epochs = epochs, validation_data = (X_val,Y_val), steps_per_epoch=X_train.shape[0] // batch_size)
+"""
+modelProcess=learningModel.fit_generator(dataGeneration.flow(Xtrain,Ytrain,batch_size=batchSize),
+                                         epochs=epoch,validation_data = (Xtest,Ytest),
+                                         steps_per_epoch=Xtrain.shape[0])
 #Evaluate the Model
+
+plt.plot(modelProcess.history['val_loss'],color="b", label="Validation Loss")
+plt.title("Test Loss")
+plt.xlabel("Number Of Epochs")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
+
+#Evaluate the Model with Confusion Matrix
+import seaborn as sns
+#Predict the values
+Yprediction=learningModel.predict(Xtest)
+#Convert the prediction 
+YpredictionClasses=np.argmax(Yprediction,axis=1)
+#Convert the true predictions
+Ytrue=np.argmax(Ytest,axis=1)
+#Confusion Matrix
+confusionMatrix=confusion_matrix(Ytrue,YpredictionClasses)
+#Show the results
+ref, ax=plt.subplots(figsize=(8,8))
+sns.heatmap(confusionMatrix,annot=True,linewidths=0.01,cmap="Greens",linecolor="gray",fmt=".1f", ax=ax)
